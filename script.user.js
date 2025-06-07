@@ -2,7 +2,7 @@
 // @name         AnimeStars Club Booster
 // @namespace    http://tampermonkey.net/
 // @version      2025-06-07
-// @description  Помогает делать вклады карт в клубы AnimeStars.org
+// @description  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
 // @author       Anton Zelinsky
 // @match        https://animestars.org/clubs/boost/?id=*
 // @match        https://astars.club/clubs/boost/?id=*
@@ -15,8 +15,8 @@
 // @run-at       document-idle
 // @grant        none
 // @homepageURL  https://github.com/AntonZelinsky/AnimeStars_Club_Booster
-// @updateURL    https://github.com/AntonZelinsky/AnimeStars_Club_Booster
-// @downloadURL  https://github.com/AntonZelinsky/AnimeStars_Club_Booster
+// @updateURL    https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
+// @downloadURL  https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
 // ==/UserScript==
 
 const DELAY_MS = 1000;
