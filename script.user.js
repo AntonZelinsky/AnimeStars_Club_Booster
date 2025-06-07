@@ -1,10 +1,12 @@
 // ==UserScript==
+// @name            AnimeStars Club Booster
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
 // @version         2025-06-07.1
-// @description:en  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
-// @description:ru  The script for automating card boosting in clubs AnimeStars.org
+// @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
+// @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
+// @description:en  The script for automating card boosting in clubs AnimeStars.org
 // @author          Anton Zelinsky
 // @match           https://animestars.org/clubs/boost/?id=*
 // @match           https://astars.club/clubs/boost/?id=*
