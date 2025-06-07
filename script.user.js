@@ -29,8 +29,6 @@ const DELAY_MS = 1000;
 (function () {
   "use strict"
 
-const DELAY_MS = 1000;
-
   function getMoscowTime() {
     const mskString = new Date().toLocaleString("en-US", {
       timeZone: "Europe/Moscow",
@@ -57,15 +55,6 @@ const DELAY_MS = 1000;
   function handleBoost() {
     console.log(`Внесение вкладов начато.`)
     const intervalId = setInterval(() => {
-      const limitCounter = document.querySelector(".boost-limit").innerText
-      if (limitCounter == "300") {
-        console.log(
-          `💳 Лимит карт исчерпан: ${new Date().toLocaleTimeString()}.`,
-        )
-        clearInterval(intervalId)
-        return
-      }
-
       const refreshBtn = document.querySelector(
         ".button.button--primary.club__boost__refresh-btn",
       )
@@ -83,6 +72,15 @@ const DELAY_MS = 1000;
       if (contributeBtn) {
         contributeBtn.click()
         console.log(`💳 Внесена карта: ${new Date().toLocaleTimeString()}.`)
+        return
+      }
+
+      const limitCounter = document.querySelector(".boost-limit").innerText
+      if (limitCounter == "300") {
+        console.log(
+          `💳 Лимит карт исчерпан: ${new Date().toLocaleTimeString()}.`,
+        )
+        clearInterval(intervalId)
         return
       }
 
@@ -108,8 +106,10 @@ const DELAY_MS = 1000;
     console.log(secondsLeft)
     if (secondsLeft > 0) {
       console.log(`До 21:01 Мск осталось ${secondsLeft} секунд.`)
-      await sleep(secondsLeft * 1000)
-      console.log(`Прошло ${secondsLeft} секунд.`)
+      console.log(`Начну работу в 21:01 Мск.`)
+      await sleep((secondsLeft + 1) * 1000)
+      console.log(`Прошло ${secondsLeft + 1} секунд. Перезагрузкаю`)
+      location.reload()
     }
 
     handleBoost()
