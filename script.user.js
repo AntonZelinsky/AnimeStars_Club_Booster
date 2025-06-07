@@ -3,7 +3,7 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2025-06-07.2
+// @version         2025-06-07.3
 // @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
 // @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
 // @description:en  The script for automating card boosting in clubs AnimeStars.org
