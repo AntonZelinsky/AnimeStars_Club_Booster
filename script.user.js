@@ -24,7 +24,8 @@
 // @downloadURL     https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
 // ==/UserScript==
 
-const DELAY_MS = 1000;
+
+const DELAY_MS = 1000; // 1 секунда = 1000 миллисекунд
 
 (function () {
   "use strict"
@@ -42,78 +43,87 @@ const DELAY_MS = 1000;
     return target
   }
 
-  function getSecondsUntil2101Moscow(nowMsk) {
+  function getSecondsUntil2101Moscow() {
+    const nowMsk = getMoscowTime()
     const target = getTarget2101Moscow(nowMsk)
     const diffMs = target - nowMsk
     return diffMs > 0 ? Math.floor(diffMs / 1000) : 0
   }
 
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+  function isTimeExpired() {
+    const moscowTime = getMoscowTime()
+    if (moscowTime.getHours() > 22) {
+      console.info('🏁 Время пожертвования карт закончилось.')
+      return true;
+    }
+    return false;
+  }
+
+  function sleep(seconds) {
+    return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  }
+
+  function reloadPageAfter5min() {
+    // Необходима перезагрузка страницы, так как счётчик внесённых карт автоматически не обновляется
+    console.log(`Страница перезагрузится через 5 минут.`)
+    setTimeout(() => {
+      location.reload();
+    }, 5 * 60 * 1000); // 5 минут
+  }
+
+  function isBoostLimitReached() {
+    const limitCounter = document.querySelector(".boost-limit").innerText
+    return limitCounter == 300
   }
 
   function handleBoost() {
     console.log(`Внесение вкладов начато.`)
     const intervalId = setInterval(() => {
-      const refreshBtn = document.querySelector(
-        ".button.button--primary.club__boost__refresh-btn",
-      )
-
+      const refreshBtn = document.querySelector(".button.button--primary.club__boost__refresh-btn")
       if (refreshBtn) {
         refreshBtn.click()
         console.log(`🌀 Обновлена карта.`)
         return
       }
 
-      const contributeBtn = document.querySelector(
-        ".button.button--primary.club__boost-btn",
-      )
-
+      const contributeBtn = document.querySelector(".button.button--primary.club__boost-btn")
       if (contributeBtn) {
         contributeBtn.click()
-        console.log(`💳 Внесена карта: ${new Date().toLocaleTimeString()}.`)
+        console.info(`💳 Внесена карта: ${new Date().toLocaleTimeString()}.`)
         return
       }
 
-      const limitCounter = document.querySelector(".boost-limit").innerText
-      if (limitCounter == "300") {
-        console.log(
-          `💳 Лимит карт исчерпан: ${new Date().toLocaleTimeString()}.`,
-        )
-        clearInterval(intervalId)
+      if (isTimeExpired(intervalId)) {
+        clearInterval(intervalId);
         return
       }
 
-      const now = getMoscowTime()
-      if (now.getUTCHours() > 22) {
-        console.log('⌛ Время пожертвования карт закончилось.')
-        clearInterval(intervalId)
-        return
-      }
-
-      console.log(
-        "⏳ Кнопки не найдены, жду...",
-        new Date().toLocaleTimeString(),
-      )
-    }, DELAY_MS)
+      console.log("⏳ Кнопки не найдены, жду...", new Date().toLocaleTimeString())
+    }, DELAY_MS);
   }
+
   async function run() {
     console.log("Начало работы ...")
+    reloadPageAfter5min()
 
-    const moscowTime = getMoscowTime()
-    const secondsLeft = getSecondsUntil2101Moscow(moscowTime)
-
-    console.log(secondsLeft)
+    const secondsLeft = getSecondsUntil2101Moscow()
     if (secondsLeft > 0) {
       console.log(`До 21:01 Мск осталось ${secondsLeft} секунд.`)
-      console.log(`Начну работу в 21:01 Мск.`)
-      await sleep((secondsLeft + 1) * 1000)
-      console.log(`Прошло ${secondsLeft + 1} секунд. Перезагрузкаю`)
+      await sleep(secondsLeft + 1)
       location.reload()
+      return
+    }
+
+    if(isBoostLimitReached()) {
+      console.info(`💳 Лимит карт исчерпан: ${new Date().toLocaleTimeString()}.`)
+      return
+    }
+    if (isTimeExpired()) {
+      return
     }
 
     handleBoost()
-    console.log(`Внесение вкладов завершено.`)
+    console.log(`🏁 Внесение вкладов завершено.`)
   }
 
   run()
