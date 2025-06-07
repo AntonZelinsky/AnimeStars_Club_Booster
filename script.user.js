@@ -1,22 +1,25 @@
 // ==UserScript==
-// @name         AnimeStars Club Booster
-// @namespace    http://tampermonkey.net/
-// @version      2025-06-07
-// @description  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
-// @author       Anton Zelinsky
-// @match        https://animestars.org/clubs/boost/?id=*
-// @match        https://astars.club/clubs/boost/?id=*
-// @match        https://asstars.club/clubs/boost/?id=*
-// @match        https://asstars1.astars.club/clubs/boost/?id=*
-// @match        https://as1.astars.club/clubs/boost/?id=*
-// @match        https://asstars.tv/clubs/boost/?id=*
-// @match        https://ass.astars.club/clubs/boost/?id=*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=animestars.org
-// @run-at       document-idle
-// @grant        none
-// @homepageURL  https://github.com/AntonZelinsky/AnimeStars_Club_Booster
-// @updateURL    https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
-// @downloadURL  https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
+// @name:en         AnimeStars Club Booster
+// @name:ru         AnimeStars Club Booster
+// @namespace       http://tampermonkey.net/
+// @version         2025-06-07.1
+// @description:en  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
+// @description:ru  The script for automating card boosting in clubs AnimeStars.org
+// @author          Anton Zelinsky
+// @match           https://animestars.org/clubs/boost/?id=*
+// @match           https://astars.club/clubs/boost/?id=*
+// @match           https://asstars.club/clubs/boost/?id=*
+// @match           https://asstars1.astars.club/clubs/boost/?id=*
+// @match           https://as1.astars.club/clubs/boost/?id=*
+// @match           https://asstars.tv/clubs/boost/?id=*
+// @match           https://ass.astars.club/clubs/boost/?id=*
+// @run-at          document-idle
+// @license         MIT
+// @icon            https://www.google.com/s2/favicons?sz=64&domain=animestars.org
+// @grant           none
+// @homepageURL     https://github.com/AntonZelinsky/AnimeStars_Club_Booster
+// @updateURL       https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
+// @downloadURL     https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
 // ==/UserScript==
 
 const DELAY_MS = 1000;
@@ -35,7 +38,7 @@ const DELAY_MS = 1000;
 
   function getTarget2101Moscow(nowMsk) {
     const target = new Date(nowMsk)
-    target.setHours(1, 49, 0, 0)
+    target.setHours(21, 1, 0, 0)
     return target
   }
 
