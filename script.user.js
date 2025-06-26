@@ -3,15 +3,19 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2025-06-17
-// @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
-// @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org
-// @description:en  The script for automating card boosting in clubs AnimeStars.org
+// @version         2025-06-27
+// @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
+// @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
+// @description:en  The script for automating card boosting in clubs AnimeStars.org. Adds a button "Add missing to list" on the card decks page for quick addition of missing cards.
 // @author          Anton Zelinsky
 // @match           https://animestars.org/clubs/boost/?id=*
 // @match           https://asstars.tv/clubs/boost/?id=*
 // @match           https://astars.club/clubs/boost/?id=*
 // @match           https://*.astars.club/clubs/boost/?id=*
+// @match           https://animestars.org/user/*/cards_progress/*
+// @match           https://asstars.tv/user/*/cards_progress/*
+// @match           https://astars.club/user/*/cards_progress/*
+// @match           https://*.astars.club/user/*/cards_progress/*
 // @run-at          document-idle
 // @license         MIT
 // @icon            https://www.google.com/s2/favicons?sz=64&domain=animestars.org
@@ -30,6 +34,7 @@ const DELAY_SEC = 1.5;
   function getMoscowTime() {
     const mskString = new Date().toLocaleString("en-US", {
       timeZone: "Europe/Moscow",
+      hour12: false,
     })
     return new Date(mskString)
   }
@@ -87,26 +92,26 @@ const DELAY_SEC = 1.5;
       const refreshBtn = document.querySelector('.button.button--primary.club__boost__refresh-btn')
       if (refreshBtn) {
         refreshBtn.click()
-        console.log('🌀 Обновлена карта.')
+        console.log(`🌀 Обновлена карта: ${refreshBtn.dataset.cardId}.`)
         await sleep(0.2)
       }
 
       const contributeBtn = document.querySelector('.button.button--primary.club__boost-btn')
       if (contributeBtn) {
         contributeBtn.click()
-        console.info(`💳 Внесена карта: ${new Date().toLocaleTimeString()}.`)
+        console.info(`💳 Внесена карта: ${contributeBtn.dataset.cardId}. ${new Date().toLocaleTimeString()}.`)
         await sleep(DELAY_SEC)
       }
 
       if (isBoostLimitReached()) {
-        return
+        break
       }
 
     } while(await sleep(DELAY_SEC))
   }
 
   async function run() {
-    console.log('Начало работы скрипта автовкладов...')
+    console.log(`Начало работы автовкладов. ${new Date().toLocaleTimeString()}.`)
 
     reloadPageAfter5min()
 
@@ -122,5 +127,27 @@ const DELAY_SEC = 1.5;
     console.log('🏁 Внесение вкладов завершено.')
   }
 
-  run()
+  function injectCardsProgressButtons() {
+    const userAnimeDivs = document.querySelectorAll('div.user-anime');
+
+    userAnimeDivs.forEach(div => {
+      const progressDiv = div.querySelector('div.user-anime__progress');
+      const button = div.querySelector('button.update-my-progress');
+      const animeId = button?.getAttribute('onclick')?.match(/UpdateMyProgress\('(\d+)'\)/)?.[1] || '000000';
+
+      progressDiv?.insertAdjacentHTML('afterend', `
+        <div class="cards-progress card-anime-list__add-btn" data-anime="${animeId}" style="display:block">
+          <i class="ass-cards"></i> Добавить недостающие в список желаний
+        </div>
+      `);
+    });
+  }
+
+  if (/\/user\/[^\/]+\/cards_progress\//.test(window.location.pathname)) {
+    injectCardsProgressButtons();
+  }
+
+  if (/\/clubs\/boost\//.test(window.location.pathname)) {
+    run();
+  }
 })()
