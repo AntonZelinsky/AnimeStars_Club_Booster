@@ -3,17 +3,19 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2025-06-27
+// @version         2025-07-08
 // @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:en  The script for automating card boosting in clubs AnimeStars.org. Adds a button "Add missing to list" on the card decks page for quick addition of missing cards.
 // @author          Anton Zelinsky
 // @match           https://animestars.org/clubs/boost/?id=*
 // @match           https://asstars.tv/clubs/boost/?id=*
+// @match           https://*.asstars.tv/clubs/boost/?id=*
 // @match           https://astars.club/clubs/boost/?id=*
 // @match           https://*.astars.club/clubs/boost/?id=*
 // @match           https://animestars.org/user/*/cards_progress/*
 // @match           https://asstars.tv/user/*/cards_progress/*
+// @match           https://*.asstars.tv/user/*/cards_progress/*
 // @match           https://astars.club/user/*/cards_progress/*
 // @match           https://*.astars.club/user/*/cards_progress/*
 // @run-at          document-idle
@@ -21,12 +23,12 @@
 // @icon            https://www.google.com/s2/favicons?sz=64&domain=animestars.org
 // @grant           none
 // @homepageURL     https://github.com/AntonZelinsky/AnimeStars_Club_Booster
-// @updateURL       https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
-// @downloadURL     https://github.com/AntonZelinsky/AnimeStars_Club_Booster/blob/master/script.user.js
+// @downloadURL https://update.greasyfork.org/scripts/538709/AnimeStars%20Club%20Booster.user.js
+// @updateURL https://update.greasyfork.org/scripts/538709/AnimeStars%20Club%20Booster.meta.js
 // ==/UserScript==
 
 
-const DELAY_SEC = 1.5;
+const DELAY_SEC = 2;
 
 (function () {
   "use strict"
