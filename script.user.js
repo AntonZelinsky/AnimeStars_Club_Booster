@@ -3,7 +3,7 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2025-07-08
+// @version         2025-07-12
 // @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:en  The script for automating card boosting in clubs AnimeStars.org. Adds a button "Add missing to list" on the card decks page for quick addition of missing cards.
@@ -33,24 +33,26 @@ const DELAY_SEC = 2;
 (function () {
   "use strict"
 
-  function getMoscowTime() {
-    const mskString = new Date().toLocaleString("en-US", {
-      timeZone: "Europe/Moscow",
+  let limitCounter = 600;
+
+  function getMinskTime() {
+    const minskTimeString = new Date().toLocaleString("en-US", {
+      timeZone: "Europe/Minsk",
       hour12: false,
     })
-    return new Date(mskString)
+    return new Date(minskTimeString)
   }
 
-  function getTarget2101Moscow(nowMsk) {
-    const target = new Date(nowMsk)
-    target.setHours(21, 1, 0, 0)
-    return target
+  function getTarget2101MinskTime(nowMinskTime) {
+    const targetTime = new Date(nowMinskTime)
+    targetTime.setHours(21, 1, 0, 0)
+    return targetTime
   }
 
-  function getSecondsUntil2101Moscow() {
-    const nowMsk = getMoscowTime()
-    const target = getTarget2101Moscow(nowMsk)
-    const diffMs = target - nowMsk
+  function getUntil2101MinskSeconds() {
+    const nowMinskTime = getMinskTime()
+    const targetTime = getTarget2101MinskTime(nowMinskTime)
+    const diffMs = targetTime - nowMinskTime
     return diffMs > 0 ? Math.floor(diffMs / 1000) : 0
   }
 
@@ -68,7 +70,7 @@ const DELAY_SEC = 2;
 
   function isBoostLimitReached() {
     const limitCounter = document.querySelector('.boost-limit').innerText
-    if (limitCounter == 300) {
+    if (limitCounter == limitCounter) {
       console.info(`💳 Лимит карт исчерпан: ${new Date().toLocaleTimeString()}.`)
       return true
     }
@@ -112,14 +114,16 @@ const DELAY_SEC = 2;
     } while(await sleep(DELAY_SEC))
   }
 
-  async function run() {
+  async function runBoost() {
     console.log(`Начало работы автовкладов. ${new Date().toLocaleTimeString()}.`)
 
     reloadPageAfter5min()
 
-    const secondsLeft = getSecondsUntil2101Moscow()
+    limitCounter = document.querySelector('.boost-limit').nextSibling.substringData(1, 3)
+
+    const secondsLeft = getUntil2101MinskSeconds()
     if (isBoostLimitReached() && secondsLeft > 0) {
-      console.log(`До 21:01 Мск осталось ${formatTimeLeft(secondsLeft)}.`)
+      console.log(`До 21:01 по Мінску осталось ${formatTimeLeft(secondsLeft)}.`)
       await sleep(secondsLeft)
       location.reload()
       return
@@ -150,6 +154,6 @@ const DELAY_SEC = 2;
   }
 
   if (/\/clubs\/boost\//.test(window.location.pathname)) {
-    run();
+    runBoost();
   }
 })()
