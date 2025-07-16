@@ -30,6 +30,24 @@
 
 const DELAY_SEC = 1.2;
 
+// Функционал для копирования юзернеймов пользователей клана с наличием текущей карты.
+// В настройке ниже указывается список юзернеймов пользователей на сайте и в Telegram или Discord.
+// Список соответствий Юзернеймов формируется по следующему принципу:
+// На первом месте — юзернейм на сайте AnimeStars, после двоеточия — юзернейм в Telegram или Discord.
+// Пример:
+// const raw = `
+// AnimeStarsNews:@AnimeStarsNews
+// admin:@AnimeStarsNews
+// `
+// Если список пустой (по умолчанию), кнопка и функционал копирования не используются.
+const raw = `
+
+`.trim();
+
+const USERNAME_MAPPING = raw
+  ? Object.fromEntries(raw.split('\n').map(line => line.trim().split(':')))
+  : null;
+
 (function () {
   "use strict"
 
@@ -86,9 +104,75 @@ const DELAY_SEC = 1.2;
     if (hrs > 0) parts.push(`${hrs} ч`)
     if (mins > 0) parts.push(`${mins} мин`)
     if (secs > 0 || parts.length === 0) parts.push(`${secs} сек`)
-    
+
     return parts.join(' ')
   }
+
+  // Добавляет кнопку для копирования списка юзернеймов пользователей, имеющих необходимые карты.
+  // Список формируется для уведомления в чате Telegram или Discord.
+  // Кнопка появляется рядом с кнопкой поиска карты и копирует форматированный список в буфер обмена.
+  function addCopyDutyUsernamesButton() {
+    if (USERNAME_MAPPING === null) return;
+
+    const users = Array.from(document.querySelectorAll('.club-boost__user'))
+      .map(user => {
+        const link = user.querySelector('a[href^="/user/"]');
+        if (!link) return null;
+        const href = link.getAttribute('href');
+        return href.slice(6, -1);
+      })
+      .filter(Boolean);
+
+    if (users.length === 0) return;
+
+    const usernames = users.map(name => USERNAME_MAPPING[name] || `@${name}`);
+    const result = `Карта: ${usernames.join(', ')}`;
+    console.log(result)
+
+    const findCardBtn = document.querySelector('a.button[href*="/cards/users/"]');
+    if (!findCardBtn) return;
+
+    const existingBtn = document.querySelector('button.tlg');
+    if (existingBtn) {
+      existingBtn.onclick = () => {
+        navigator.clipboard.writeText(result)
+          .then(() => console.log(result))
+          .catch(err => console.error('Ошибка копирования:', err));
+      };
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '8px';
+
+    findCardBtn.parentNode.insertBefore(wrapper, findCardBtn);
+    wrapper.appendChild(findCardBtn);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.setAttribute('type', 'button');
+    copyBtn.setAttribute('aria-label', 'Скопировать карту');
+    copyBtn.classList.add('tlg');
+    copyBtn.style.width = '32px';
+    copyBtn.style.height = '32px';
+    copyBtn.style.flexShrink = '0';
+    copyBtn.style.backgroundColor = 'var(--bg-btn-dark)';
+    copyBtn.style.borderRadius = '50%';
+    copyBtn.style.backgroundPosition = 'center center';
+    copyBtn.style.backgroundRepeat = 'no-repeat';
+    copyBtn.style.border = 'none';
+    copyBtn.style.cursor = 'pointer';
+
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(result)
+        .then(() => console.log(result))
+        .catch(err => console.error('Ошибка копирования:', err));
+    };
+
+    wrapper.appendChild(copyBtn);
+  }
+
 
   async function handleBoost() {
     console.log('Внесение вкладов начато.')
@@ -98,6 +182,8 @@ const DELAY_SEC = 1.2;
         refreshBtn.click()
         console.log(`🌀 Обновлена карта: ${refreshBtn.dataset.cardId}.`)
         await sleep(0.2)
+
+        addCopyDutyUsernamesButton();
       }
 
       const contributeBtn = document.querySelector('.button.button--primary.club__boost-btn')
