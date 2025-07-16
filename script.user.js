@@ -3,7 +3,7 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2025-07-13
+// @version         2025-07-17
 // @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:en  The script for automating card boosting in clubs AnimeStars.org. Adds a button "Add missing to list" on the card decks page for quick addition of missing cards.
