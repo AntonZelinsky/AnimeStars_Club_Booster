@@ -3,7 +3,7 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2025-07-17
+// @version         2025-07-24
 // @description     Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:ru  Скрипт для автоматизации внесения вкладов карт в клубы AnimeStars.org. На странице с колодами карт добавляется кнопка "Добавить недостающие в список" для быстрого пополнения недостающих карт.
 // @description:en  The script for automating card boosting in clubs AnimeStars.org. Adds a button "Add missing to list" on the card decks page for quick addition of missing cards.
@@ -108,6 +108,14 @@ const USERNAME_MAPPING = raw
     return parts.join(' ')
   }
 
+  function assignCopyHandler(buttonTag, text) {
+    buttonTag.onclick = () => {
+      navigator.clipboard.writeText(result)
+        .then(() => console.log(result))
+        .catch(err => console.error('Ошибка копирования:', err));
+    };
+  }
+
   // Добавляет кнопку для копирования списка юзернеймов пользователей, имеющих необходимые карты.
   // Список формируется для уведомления в чате Telegram или Discord.
   // Кнопка появляется рядом с кнопкой поиска карты и копирует форматированный список в буфер обмена.
@@ -134,11 +142,7 @@ const USERNAME_MAPPING = raw
 
     const existingBtn = document.querySelector('button.tlg');
     if (existingBtn) {
-      existingBtn.onclick = () => {
-        navigator.clipboard.writeText(result)
-          .then(() => console.log(result))
-          .catch(err => console.error('Ошибка копирования:', err));
-      };
+      assignCopyHandler(existingBtn, result);
       return;
     }
 
@@ -164,11 +168,7 @@ const USERNAME_MAPPING = raw
     copyBtn.style.border = 'none';
     copyBtn.style.cursor = 'pointer';
 
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(result)
-        .then(() => console.log(result))
-        .catch(err => console.error('Ошибка копирования:', err));
-    };
+    assignCopyHandler(copyBtn, result);
 
     wrapper.appendChild(copyBtn);
   }
