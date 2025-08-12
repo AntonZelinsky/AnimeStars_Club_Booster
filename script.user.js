@@ -3,7 +3,7 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2.0.0
+// @version         2025-08-12
 // @description     Автоматизирует внесение вкладов карт в клубах на AnimeStars. Отправляет уведомления в Telegram-чат о текущей карте и её владельцах. Добавляет кнопку добавления недостающих карт в список желаний на странице Колод карт.
 // @description:ru  Автоматизирует внесение вкладов карт в клубах на AnimeStars. Отправляет уведомления в Telegram-чат о текущей карте и её владельцах. Добавляет кнопку добавления недостающих карт в список желаний на странице Колод карт.
 // @description:en  Automates card contributions in AnimeStars clubs. Sends Telegram chat notifications about the current card and its owners. Adds a button to add missing cards to the wishlist on the Card Decks page.
@@ -21,7 +21,8 @@
 // @run-at          document-idle
 // @license         MIT
 // @icon            https://www.google.com/s2/favicons?sz=64&domain=animestars.org
-// @grant           none
+// @grant           GM_registerMenuCommand
+// @grant           GM_unregisterMenuCommand
 // @homepageURL     https://github.com/AntonZelinsky/AnimeStars_Club_Booster
 // @downloadURL     https://update.greasyfork.org/scripts/538709/AnimeStars%20Club%20Booster.user.js
 // @updateURL       https://update.greasyfork.org/scripts/538709/AnimeStars%20Club%20Booster.meta.js
@@ -60,11 +61,18 @@ const DELAY_BOOST_AFTER_REFRESH_SEC = 0.2;
  *
  * ⚠️ Важно: скрипт, настроенный на отправку уведомлений в Telegram, должен быть активен только у одного пользователя.
  * Иначе в чат будут поступать дублирующие уведомления от разных людей.
- *
  * ⚠️ Рекомендуется запускать скрипт с включёнными уведомлениями только администраторам или модераторам клуба.
  * У обычных участников может проявляться баг сайта: при смене карты список владельцев не всегда обновляется корректно,
  * из-за чего Telegram-уведомления могут не отправляться или содержать неполные данные.
  *
+ * В меню Tampermonkey под названием скрипта появляется кнопка «Включить/Выключить уведомления в Telegram»
+ * (доступна только если настроена отправка уведомлений).
+ * Её нужно нажимать каждый день перед началом взносов — иначе уведомления не отправятся.
+ * Это предотвращает дубли, когда уведомления могут включить несколько администраторов.
+ * Включает только один человек в день, остальные оставляют выключено.
+ *
+ * Если не включать — автовзносы работают без уведомлений в Telegram.
+ * 
  * Чтобы Telegram-бот начал отправлять уведомления в ваш чат:
  *
  * 1. Заполните переменную `usernameMappingRaw` соответствиями:
@@ -112,9 +120,9 @@ const RAW_TELEGRAM_CHAT_ID = '';
 
 // 3. Токен Telegram-бота, через которого будут отправляться уведомления
 // По умолчанию используется https://t.me/AnimeStarsClubBoosterBot
-const TELEGRAM_BOT_TOKEN = '';
+const TELEGRAM_BOT_TOKEN = '8144505785:AAEgVSP_HFcjWm8VxZOYHXLI7dy6XMpqGmw';
 
-// 4. Задержка перед отправкой уведомления в Telegram (в секундах)
+// Задержка перед отправкой уведомления в Telegram (в секундах)
 const DELAY_SEND_MESSAGE__SEC = 4;
 
 
@@ -139,10 +147,14 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
 
   const MAX_LIMIT_CARDS = 600;
   const COOKIE_KEY_CURRENT_BOOST_CARD_ID = 'CURRENT_BOOST_CARD_ID';
+  const COOKIE_KEY_TG_NOTIF_DATE = 'TG_NOTIFICATIONS_DATE';
   const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
+  let observerInstance = null;
+  let menuCommandId = null;
+
   /**
-   * Возвращает текущее время по Минску
+   * Возвращает текущую дату и время по Минску
    * @returns {Date} — объект времени по Минску
    */
   function getMinskTime() {
@@ -151,6 +163,14 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
       hour12: false,
     });
     return new Date(minskTimeString);
+  }
+
+  /**
+   * Возвращает текущую дату по Минску в формате YYYY-MM-DD
+   * @returns {string}
+   */
+  function getMinskDateString() {
+    return getMinskTime().toISOString().slice(0, 10);
   }
 
   /**
@@ -232,7 +252,7 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
    * @param {string} [defaultValue=null] — Значение по умолчанию, если ключ не найден
    * @returns {string|null} — Строка из хранилища или defaultValue
    */
-  function getStorage(key, defaultValue = null) {
+  function getStorageValue(key, defaultValue = null) {
     const value = localStorage.getItem(key);
     return value === null ? defaultValue : value;
   }
@@ -242,7 +262,7 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
    * @param {string} key — Ключ
    * @param {string} value — Строка
    */
-  function upsertStorage(key, value) {
+  function upsertStorageValue(key, value) {
     localStorage.setItem(key, value);
   }
 
@@ -254,22 +274,23 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
     const imgElement = document.querySelector('.club-boost__image.anime-cards__item img');
     return new URL(imgElement.getAttribute('src'), location.origin).href;
   }
+
   /**
   * Отправляет уведомление в канал Telegram со списком пользователях, у которых есть нужная карта для взноса.
   * Сообщение отправляется только для новой карты.
   */
   function sendMessageToTelegramAboutDutyUsernames() {
-    if (USERNAME_MAPPING === null || TELEGRAM_BOT_TOKEN == '' || TELEGRAM_CHAT_ID == '') return;
+    if (!isTelegramNotificationConfigured()) return;
 
     const refreshBtn = document.querySelector('.button.button--primary.club__boost__refresh-btn');
     const currentBoostCardId = refreshBtn ? refreshBtn.dataset.cardId : null;
 
-    const lastBoostCardId = getStorage(COOKIE_KEY_CURRENT_BOOST_CARD_ID);
+    const lastBoostCardId = getStorageValue(COOKIE_KEY_CURRENT_BOOST_CARD_ID);
     if (!refreshBtn || lastBoostCardId === currentBoostCardId) return;
 
     const users = Array.from(document.querySelectorAll('.club-boost__user'))
       .map(user => {
-        // Извлекаем юзернейм из ссылки вида "/user/UserName/"
+        // Извлекаем UserName из ссылки вида "/user/UserName/"
         const link = user.querySelector('a[href^="/user/"]');
         const href = link.getAttribute('href');
         return href.slice(6, -1);
@@ -278,7 +299,7 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
 
     if (users.length === 0) return;
 
-    const usernames = users.map(name => USERNAME_MAPPING[name] || `@${name}`);
+    const usernames = users.map(name => USERNAME_MAPPING[name] || name);
     const result = `Карта <code>${currentBoostCardId}</code>: ${usernames.join(', ')}`;
     console.log(`Отправлено в телеграм: ${result}`);
     DLEPush.info(result, 'Отправлено в телеграм:');
@@ -286,7 +307,7 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
     const imageUrl = getCardImageUrl();
 
     sendTelegramMessage(result, imageUrl);
-    upsertStorage(COOKIE_KEY_CURRENT_BOOST_CARD_ID, currentBoostCardId);
+    upsertStorageValue(COOKIE_KEY_CURRENT_BOOST_CARD_ID, currentBoostCardId);
   }
 
   /**
@@ -317,16 +338,64 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
   }
 
   /**
+   * Проверяет, были ли включены уведомления в Telegram сегодня
+   * @returns {boolean}
+   */
+  function areTelegramNotificationsEnabledToday() {
+    const savedDate = getStorageValue(COOKIE_KEY_TG_NOTIF_DATE);
+    return savedDate === getMinskDateString();
+  }
+
+  /**
+   * Проверяет, настроены ли уведомления в Telegram.
+   * Возвращает true, если переменные USERNAME_MAPPING, TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID корректно заполнены.
+   * @returns {boolean}
+   */
+  function isTelegramNotificationConfigured() {
+    return USERNAME_MAPPING !== null && TELEGRAM_BOT_TOKEN !== '' && TELEGRAM_CHAT_ID !== '';
+  }
+
+  /**
+   * Переключает состояние Telegram-уведомлений
+   */
+  function toggleTelegramNotifications() {
+    if (areTelegramNotificationsEnabledToday()) { // Выключить уведомления в Telegram
+      upsertStorageValue(COOKIE_KEY_TG_NOTIF_DATE, null);
+      stopBoostObserver();
+      DLEPush.info('Telegram-уведомления выключены.');
+      replaceCommand('Включить уведомления в Telegram');
+    } else { // Включить уведомления в Telegram
+      DLEPush.info('Telegram-уведомления включены на сегодня.');
+      replaceCommand('Выключить уведомления в Telegram');
+      upsertStorageValue(COOKIE_KEY_TG_NOTIF_DATE, getMinskDateString());
+      observeBoostOwners();
+    }
+  }
+
+  /**
+   * Удаление старой команды и регистрация новой для включения и выключения
+   */
+  function replaceCommand(title) {
+    GM_unregisterMenuCommand(menuCommandId);
+    menuCommandId = GM_registerMenuCommand(title, toggleTelegramNotifications);
+  }
+
+  /**
+   * Запускает наблюдатель за изменением карты
    * Следит за изменением карты и отправляет с задержкой уведомление в Telegram при её смене
    */
   function observeBoostOwners() {
+    if (observerInstance) return;
+
     const target = document.querySelector('.club-boost--content');
-    if (!target) return;
+    if (!target) 
+      return;
 
-    let boostChangeTimeoutId = null;
-    const observer = new MutationObserver(() => {
-      console.log('Новая карта');
+    // Отправка уведомления о текущей карте при первом запуске
+    sendMessageToTelegramAboutDutyUsernames();
 
+    let boostChangeTimeoutId = null; // вынеси 
+    observerInstance = new MutationObserver(() => {
       // Очистка таймера для отмены отправки уведомления с предыдущей картой
       clearTimeout(boostChangeTimeoutId);
 
@@ -342,10 +411,20 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
       }, DELAY_SEND_MESSAGE__SEC * 1000); // Установка задержки перед отправкой сообщения в Telegram
     });
 
-    observer.observe(target, {
+    observerInstance.observe(target, {
       childList: true,
       subtree: false,
     });
+  }
+
+  /**
+   * Останавливает наблюдатель
+   */
+  function stopBoostObserver() {
+    if (observerInstance) {
+      observerInstance.disconnect();
+      observerInstance = null;
+    }
   }
 
   /**
@@ -390,8 +469,7 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
    */
   async function handleBoost() {
     console.log('Внесение вкладов начато.');
-    console.log(`Последняя карта: ${getStorage(COOKIE_KEY_CURRENT_BOOST_CARD_ID)}`);
-    sendMessageToTelegramAboutDutyUsernames();
+    console.log(`Последняя карта: ${getStorageValue(COOKIE_KEY_CURRENT_BOOST_CARD_ID)}`);
 
     do {
       const refreshBtn = document.querySelector('.button.button--primary.club__boost__refresh-btn')
@@ -425,6 +503,15 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
 
     reloadPageAfter5min()
 
+    if (isTelegramNotificationConfigured()) {
+      // Регистрируем команды в меню TemperMonkey
+      if (areTelegramNotificationsEnabledToday()) {
+        replaceCommand('Выключить уведомления в Telegram');
+      } else { // Включить уведомления в Telegram
+        replaceCommand('Включить уведомления в Telegram');
+      }
+    }
+
     const secondsLeft = getUntil2101MinskSeconds();
     if (isBoostLimitReached() && secondsLeft > 0) {
       console.log(`До 21:01 по Мінску осталось ${formatTimeLeft(secondsLeft)}.`);
@@ -433,14 +520,16 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
       return;
     }
 
-    if (USERNAME_MAPPING !== null) {
+    if (isTelegramNotificationConfigured()) {
       DLEPush.info(`🔢 Число участников для уведомления в чате Telegram: ${Object.keys(USERNAME_MAPPING).length}.`);
     }
 
     fixStyle();
     fixJs();
 
-    observeBoostOwners();
+    if (isTelegramNotificationConfigured() && areTelegramNotificationsEnabledToday()) {
+      observeBoostOwners();
+    }
 
     await handleBoost();
     console.log('🏁 Внесение вкладов завершено.');
@@ -475,4 +564,5 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
 
     injectCardsProgressButtons();
   }
+
 })()
