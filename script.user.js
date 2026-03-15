@@ -8,13 +8,13 @@
 // @description:ru  Автоматизирует внесение вкладов карт в клубах на AnimeStars. Отправляет уведомления в Telegram-чат о текущей карте и её владельцах. Добавляет кнопку добавления недостающих карт в список желаний на странице Колод карт.
 // @description:en  Automates card contributions in AnimeStars clubs. Sends Telegram chat notifications about the current card and its owners. Adds a button to add missing cards to the wishlist on the Card Decks page.
 // @author          Anton Zelinsky https://t.me/anzeky
-// @match           https://animestars.org/clubs/boost/?id=*
+// @include         https://*anime*/clubs/boost/?id=*
+// @include         https://*anime*/user/*/cards_progress/*
 // @match           https://asstars.tv/clubs/boost/?id=*
 // @match           https://*.asstars.tv/clubs/boost/?id=*
-// @match           https://astars.club/clubs/boost/?id=*
+// @match           https://animesss.tv/clubs/boost/?id=*
 // @match           https://animesss.com/clubs/boost/?id=*
 // @match           https://*.astars.club/clubs/boost/?id=*
-// @match           https://animestars.org/user/*/cards_progress/*
 // @match           https://asstars.tv/user/*/cards_progress/*
 // @match           https://animesss.com/user/*/cards_progress/*
 // @match           https://*.asstars.tv/user/*/cards_progress/*
