@@ -3,7 +3,7 @@
 // @name:en         AnimeStars Club Booster
 // @name:ru         AnimeStars Club Booster
 // @namespace       http://tampermonkey.net/
-// @version         2026-01-14
+// @version         2026-04-02
 // @description     Автоматизирует внесение вкладов карт в клубах на AnimeStars. Отправляет уведомления в Telegram-чат о текущей карте и её владельцах. Добавляет кнопку добавления недостающих карт в список желаний на странице Колод карт.
 // @description:ru  Автоматизирует внесение вкладов карт в клубах на AnimeStars. Отправляет уведомления в Telegram-чат о текущей карте и её владельцах. Добавляет кнопку добавления недостающих карт в список желаний на странице Колод карт.
 // @description:en  Automates card contributions in AnimeStars clubs. Sends Telegram chat notifications about the current card and its owners. Adds a button to add missing cards to the wishlist on the Card Decks page.
@@ -154,7 +154,6 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
 (function () {
   "use strict"
 
-  const MAX_LIMIT_CARDS = 600;
   const COOKIE_KEY_CURRENT_BOOST_CARD_ID = 'CURRENT_BOOST_CARD_ID';
   const COOKIE_KEY_TG_NOTIF_DATE = 'TG_NOTIFICATIONS_DATE';
   const COOKIE_KEY_SKIP_CARD_DATE = 'COOKIE_KEY_SKIP_CARD_DATE';
@@ -226,19 +225,31 @@ const TELEGRAM_CHAT_ID = RAW_TELEGRAM_CHAT_ID.startsWith('-100') // Id чата 
     }, 5 * 60 * 1000);
   }
 
-  /**
-   * Проверяет, достигнут ли лимит внесённых карт
-   * @returns {boolean} — true, если лимит достигнут
-   */
-  function isBoostLimitReached() {
-    const limitCounter = document.querySelector('.boost-limit').innerText;
-    if (MAX_LIMIT_CARDS == limitCounter) {
-      console.info(`💳 Лимит карт исчерпан: ${new Date().toLocaleTimeString()}.`);
-      DLEPush.info(`💳 Лимит карт исчерпан.`);
-      return true;
-    }
+ /**
+ * Проверяет, достигнут ли лимит внесённых карт
+ * @returns {boolean} — true, если лимит достигнут
+ */
+function isBoostLimitReached() {
+  const progressBar = document.querySelector(
+    '#my-progress .pbar__track[role="progressbar"]'
+  );
+
+  if (!progressBar) {
+    console.warn('Не удалось найти progressbar лимита пожертвований карт.');
     return false;
   }
+
+  const currentValue = Number(progressBar.getAttribute('aria-valuenow'));
+  const maxValue = Number(progressBar.getAttribute('aria-valuemax'));
+
+  if (currentValue >= maxValue) {
+    console.info(`💳 Лимит карт исчерпан: ${currentValue}/${maxValue}. ${new Date().toLocaleTimeString()}.`);
+    DLEPush.info(`💳 Лимит карт исчерпан: ${currentValue}/${maxValue}.`);
+    return true;
+  }
+
+  return false;
+}
 
   /**
    * Преобразует количество секунд в строку вида "X ч Y мин Z сек"
